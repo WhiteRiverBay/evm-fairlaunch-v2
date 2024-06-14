@@ -35,14 +35,14 @@ After the scheduled launch block is reached, any player can launch ETH and TOKEN
 
 ## Install
 
-'''
+```
 forge install OpenZeppelin/openzeppelin-contracts@v5.0.2
-'''
+```
 
 ## Test
 
-'''
+```
 forge test -vvvv
-'''
+```
 
 
