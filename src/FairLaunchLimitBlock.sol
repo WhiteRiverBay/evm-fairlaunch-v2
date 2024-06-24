@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity =0.8.24;
 
 // IERC20
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -63,8 +63,8 @@ contract FairLaunchLimitBlockToken is IFairLaunch, Meme, ReentrancyGuard, NoDele
     // is trading started
     bool public started;
 
-    address public uniswapRouter;
-    address public uniswapFactory;
+    address immutable public uniswapRouter;
+    address immutable public uniswapFactory;
 
     // fund balance
     mapping(address => uint256) public fundBalanceOf;
@@ -73,22 +73,22 @@ contract FairLaunchLimitBlockToken is IFairLaunch, Meme, ReentrancyGuard, NoDele
     mapping(address => bool) public minted;
 
     // total dispatch amount
-    uint256 public totalDispatch;
+    uint256 immutable public totalDispatch;
 
     // until block number
-    uint256 public untilBlockNumber;
+    uint256 immutable public untilBlockNumber;
 
     // total ethers funded
     uint256 public totalEthers;
 
     // soft top cap
-    uint256 public softTopCap;
+    uint256 immutable public softTopCap;
 
     // refund fee rate
-    uint256 public refundFeeRate;
+    uint256 immutable public refundFeeRate;
 
     // refund fee to
-    address public refundFeeTo;
+    address immutable public refundFeeTo;
 
     mapping(address => bool) public claimed;
 
@@ -126,7 +126,7 @@ contract FairLaunchLimitBlockToken is IFairLaunch, Meme, ReentrancyGuard, NoDele
             } else if (msg.value == CLAIM_COMMAND) {
                 _claimExtraETH();
             } else {
-                revert("FairMint: invalid command - mint only");
+                revert("FairMint: invalid command - mint or claim only");
             }
         } else {
             // before started
@@ -154,7 +154,8 @@ contract FairLaunchLimitBlockToken is IFairLaunch, Meme, ReentrancyGuard, NoDele
 
     function canStart() public view returns (bool) {
         // return block.number >= untilBlockNumber || totalEthers >= softTopCap;
-        return block.number >= untilBlockNumber;
+        // eth balance of this contract is more than zero
+        return block.number >= untilBlockNumber && balanceOf(address(this)) > 0 && totalEthers >= MINIMAL_FUND;
     }
 
     // get extra eth
@@ -180,7 +181,7 @@ contract FairLaunchLimitBlockToken is IFairLaunch, Meme, ReentrancyGuard, NoDele
         uint256 fundAmount = fundBalanceOf[msg.sender];
         require(fundAmount > 0, "FairMint: no fund");
 
-        require(claimed[msg.sender] == false, "FairMint: already claimed");
+        require(!claimed[msg.sender], "FairMint: already claimed");
         claimed[msg.sender] = true;
 
         uint256 claimAmount = (fundAmount * extra) / totalEthers;
@@ -197,7 +198,7 @@ contract FairLaunchLimitBlockToken is IFairLaunch, Meme, ReentrancyGuard, NoDele
         if (totalEthers == 0) {
             return 0;
         }
-        uint256 _mintAmount = ((totalDispatch / 2) * fundBalanceOf[account]) /
+        uint256 _mintAmount = (totalDispatch * fundBalanceOf[account]) / 2 /
             totalEthers;
         return _mintAmount;
     }
@@ -290,18 +291,12 @@ contract FairLaunchLimitBlockToken is IFairLaunch, Meme, ReentrancyGuard, NoDele
             totalDispatch / 2, // token desired
             totalDispatch / 2, // token min
             totalAdd, // eth min
-            address(this), // lp to
+            address(0), // lp to, if you want to drop 
             block.timestamp + 1 days // deadline
         );
-        _dropLP(_pair);
         emit LaunchEvent(address(this), tokenAmount, ethAmount, liquidity);
 
         (bool success, ) = msg.sender.call{value: START_COMMAND}("");
         require(success, "FairMint: mint failed");
-    }
-
-    function _dropLP(address lp) private {
-        IERC20 lpToken = IERC20(lp);
-        lpToken.safeTransfer(address(0), lpToken.balanceOf(address(this)));
     }
 }
