@@ -4,6 +4,9 @@
 - Players participate in fundraising by transferring ETH to the contract.
 - Players can transfer tokens to the contract at any time before launch to obtain refunds
 
+***NOTE***
+If you want to permanently lock up LP and withdraw LP earnings at the same time, please use FairLaunchLimitBlockV3.sol and set the LP lock contract to the contract address deployed by https://github.com/WhiteRiverBay/evm-fairlaunch-lock
+
 ## Rules
 Players participate in the fair launch game by transferring ETH to the contract.
 
