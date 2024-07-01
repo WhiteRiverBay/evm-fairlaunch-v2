@@ -382,7 +382,7 @@ contract FairLaunchLimitBlockTokenV3 is
 
         // lock lp into contract forever
         if (locker != address(0)) {
-            // 需要授权给lock合约
+            
             IERC721(uniswapPositionManager).approve(locker, tokenId);
             IUniLocker _locker = IUniLocker(locker);
             uint256 _lockId = _locker.lock(
